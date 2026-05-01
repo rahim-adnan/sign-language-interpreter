@@ -1,11 +1,12 @@
 FROM python:3.11-slim
 
-# Install system libraries that MediaPipe needs
 RUN apt-get update && apt-get install -y \
     libgles2 \
     libgl1 \
     libglib2.0-0 \
-    && rm -rf /var/lib/dpkg/lists/*
+    libegl1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
