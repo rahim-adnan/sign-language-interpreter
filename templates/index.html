@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASL Sign Language Interpreter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f0f;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header { text-align: center; }
+    header h1 { font-size: 2.2rem; font-weight: 700; color: #00d47a; }
+    header p  { font-size: 1.1rem; color: #666; margin-top: 6px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* LEFT — small webcam + transcript */
+    .left { display: flex; flex-direction: column; gap: 16px; }
+
+    .video-wrap {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #1a1a1a;
+      border: 1px solid #252525;
+    }
+
+    video { width: 100%; display: block; transform: scaleX(-1); }
+    canvas { position: absolute; top:0; left:0; width:100%; height:100%; }
+
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #252525;
+      border-radius: 14px;
+      padding: 22px;
+    }
+
+    .label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #555;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    /* TRANSCRIPT */
+    .transcript-text {
+      font-size: 2.2rem;
+      color: #eee;
+      min-height: 64px;
+      word-break: break-all;
+      letter-spacing: 4px;
+      line-height: 1.4;
+      margin-bottom: 18px;
+    }
+
+    .cursor {
+      display: inline-block; width: 3px; height: 2rem;
+      background: #00d47a; margin-left: 3px;
+      animation: blink 1s step-end infinite; vertical-align: middle;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn {
+      padding: 11px 22px; border-radius: 10px;
+      border: 1px solid #333; background: #222;
+      color: #aaa; font-size: 0.95rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: #2a2a2a; color: #eee; }
+    .btn.green { border-color: #00d47a55; color: #00d47a; }
+    .btn.green:hover { background: #00d47a18; }
+    .btn.red   { border-color: #d4000055; color: #e05555; }
+    .btn.red:hover { background: #2a1010; }
+
+    /* MIDDLE — detection */
+    .middle { display: flex; flex-direction: column; gap: 16px; }
+
+    .big-letter {
+      font-size: 9rem; font-weight: 800;
+      color: #252525; text-align: center;
+      line-height: 1; transition: color 0.15s;
+      padding: 10px 0;
+    }
+    .big-letter.active { color: #ffe44d; }
+
+    .progress-label { font-size: 1rem; color: #666; margin: 14px 0 8px; }
+
+    .progress-bg {
+      background: #252525; border-radius: 10px;
+      height: 14px; overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; background: #00d47a;
+      border-radius: 10px; width: 0%;
+      transition: width 0.08s linear;
+    }
+
+    .status { display: flex; align-items: center; gap: 10px; font-size: 1rem; color: #555; margin-top: 14px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: #333; }
+    .dot.live { background: #00d47a; box-shadow: 0 0 8px #00d47a88; }
+
+    /* FINGERS */
+    .fingers { display: flex; gap: 10px; }
+
+    .finger {
+      flex: 1; height: 60px; border-radius: 12px;
+      background: #252525; display: flex;
+      flex-direction: column; align-items: center;
+      justify-content: center; font-size: 1rem;
+      font-weight: 700; color: #444; gap: 4px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .finger span { font-size: 0.72rem; font-weight: 400; }
+    .finger.up { background: #00d47a; color: #000; }
+
+    /* RIGHT — sign reference + how to */
+    .right { display: flex; flex-direction: column; gap: 16px; }
+
+    .sign-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .sign-item {
+      background: #222; border: 1px solid #2a2a2a;
+      border-radius: 12px; padding: 14px;
+      display: flex; align-items: center;
+      gap: 12px; transition: border-color 0.1s, background 0.1s;
+    }
+    .sign-item.highlight { background: #00d47a18; border-color: #00d47a66; }
+
+    .sign-letter { font-size: 1.8rem; font-weight: 800; color: #ffe44d; width: 28px; text-align: center; }
+    .sign-desc   { font-size: 0.9rem; color: #888; line-height: 1.4; }
+
+    /* HOW TO */
+    .how-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+
+    .how-list li {
+      display: flex; align-items: flex-start;
+      gap: 14px; font-size: 1rem; color: #888; line-height: 1.5;
+    }
+
+    .how-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #00d47a22; color: #00d47a;
+      font-size: 0.85rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🤟 ASL Sign Language Interpreter</h1>
+  <p>Hold a sign steady for 1.5 seconds — the letter locks in automatically</p>
+</header>
+
+<div class="layout">
+
+  <!-- COL 1: small webcam + transcript -->
+  <div class="left">
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="label">Transcript</div>
+      <div class="transcript-text" id="transcript"><span class="cursor"></span></div>
+      <div class="btn-row">
+        <button class="btn green" onclick="addSpace()">Space</button>
+        <button class="btn" onclick="deleteLast()">⌫ Delete</button>
+        <button class="btn red" onclick="clearAll()">Clear</button>
+        <button class="btn green" onclick="copyText()">⎘ Copy</button>
+        <button class="btn red" onclick="quitApp()">✕ Quit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- COL 2: detection panel -->
+  <div class="middle">
+    <div class="card">
+      <div class="label">Detected Letter</div>
+      <div class="big-letter" id="bigLetter">-</div>
+      <div class="progress-label" id="progressLabel">Show your hand to start</div>
+      <div class="progress-bg"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="status">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">Starting camera...</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="label">Fingers Up</div>
+      <div class="fingers">
+        <div class="finger" id="f0">T<span>Thumb</span></div>
+        <div class="finger" id="f1">I<span>Index</span></div>
+        <div class="finger" id="f2">M<span>Mid</span></div>
+        <div class="finger" id="f3">R<span>Ring</span></div>
+        <div class="finger" id="f4">P<span>Pinky</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COL 3: sign reference + how to -->
+  <div class="right">
+    <div class="card">
+      <div class="label">Sign Reference</div>
+      <div class="sign-grid" id="signGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">How to Use</div>
+      <ul class="how-list">
+        <li><div class="how-num">1</div>Allow camera access when the browser asks</li>
+        <li><div class="how-num">2</div>Hold your hand clearly in front of the camera</li>
+        <li><div class="how-num">3</div>Make one of the signs from the reference panel</li>
+        <li><div class="how-num">4</div>Hold still — green bar fills over 1.5s, letter added</li>
+        <li><div class="how-num">5</div>Change sign for next letter. Use Space / Delete to edit</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const video         = document.getElementById('video');
+  const canvas        = document.getElementById('canvas');
+  const ctx           = canvas.getContext('2d');
+  const bigLetter     = document.getElementById('bigLetter');
+  const progressBar   = document.getElementById('progressBar');
+  const progressLabel = document.getElementById('progressLabel');
+  const transcriptEl  = document.getElementById('transcript');
+  const statusDot     = document.getElementById('statusDot');
+  const statusText    = document.getElementById('statusText');
+  const signGrid      = document.getElementById('signGrid');
+
+  const SIGNS = [
+    { letter: 'A', desc: 'Fist — all fingers closed' },
+    { letter: 'B', desc: '4 fingers up, thumb in' },
+    { letter: 'D', desc: 'Only index finger up' },
+    { letter: 'I', desc: 'Only pinky up' },
+    { letter: 'L', desc: 'Thumb + index (L shape)' },
+    { letter: 'V', desc: 'Index + middle (peace)' },
+    { letter: 'W', desc: 'Index + middle + ring up' },
+    { letter: 'Y', desc: 'Thumb + pinky out' },
+    { letter: '1', desc: 'Index only' },
+    { letter: '2', desc: 'Index + middle' },
+    { letter: '3', desc: 'Index + mid + ring' },
+    { letter: '4', desc: '4 fingers, no thumb' },
+    { letter: '5', desc: 'All 5 fingers open' },
+  ];
+
+  SIGNS.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'sign-item';
+    el.id = 'sign-' + s.letter;
+    el.innerHTML = `<span class="sign-letter">${s.letter}</span><span class="sign-desc">${s.desc}</span>`;
+    signGrid.appendChild(el);
+  });
+
+  let transcript = '', lastLetter = '', holdStart = null;
+  const HOLD_MS = 1500;
+  let detecting = false, highlighted = '';
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+    .then(stream => {
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        canvas.width  = video.videoWidth;
+        canvas.height = video.videoHeight;
+        statusDot.classList.add('live');
+        statusText.textContent = 'Camera ready — show a sign!';
+        detect();
+      };
+    })
+    .catch(() => { statusText.textContent = 'Camera access denied'; });
+
+  async function detect() {
+    if (detecting) return;
+    detecting = true;
+    const off = document.createElement('canvas');
+    off.width = video.videoWidth; off.height = video.videoHeight;
+    const octx = off.getContext('2d');
+    octx.translate(off.width, 0); octx.scale(-1, 1);
+    octx.drawImage(video, 0, 0);
+    try {
+      const res  = await fetch('/detect', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ image: off.toDataURL('image/jpeg', 0.7) }) });
+      handleResult(await res.json());
+    } catch(e) {}
+    detecting = false;
+    setTimeout(detect, 120);
+  }
+
+  const CONNS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
+
+  function drawSkeleton(pts) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#00d47a'; ctx.lineWidth = 2.5;
+    CONNS.forEach(([a,b]) => { ctx.beginPath(); ctx.moveTo(pts[a].x,pts[a].y); ctx.lineTo(pts[b].x,pts[b].y); ctx.stroke(); });
+    pts.forEach(p => {
+      ctx.beginPath(); ctx.arc(p.x,p.y,6,0,Math.PI*2); ctx.fillStyle='#00d47a'; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    });
+  }
+
+  function handleResult({ letter, fingers, landmarks }) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (landmarks && landmarks.length) drawSkeleton(landmarks);
+
+    ['f0','f1','f2','f3','f4'].forEach((id,i) => document.getElementById(id).classList.toggle('up', fingers[i]));
+
+    if (letter !== highlighted) {
+      if (highlighted) { const p = document.getElementById('sign-'+highlighted); if(p) p.classList.remove('highlight'); }
+      if (letter)      { const c = document.getElementById('sign-'+letter);      if(c) c.classList.add('highlight'); }
+      highlighted = letter;
+    }
+
+    bigLetter.textContent = letter || '-';
+    bigLetter.classList.toggle('active', !!letter && letter !== '?');
+
+    if (letter && letter !== '?') {
+      statusText.textContent = `Detecting: ${letter}`;
+      if (letter !== lastLetter) { holdStart = Date.now(); lastLetter = letter; }
+      const held = Date.now() - holdStart;
+      const pct  = Math.min((held / HOLD_MS) * 100, 100);
+      progressBar.style.width = pct + '%';
+      progressLabel.textContent = `Holding "${letter}" — ${Math.round(pct)}%`;
+      if (held >= HOLD_MS) {
+        transcript += letter;
+        updateTranscript();
+        holdStart = Date.now() + HOLD_MS;
+        statusText.textContent = `Added: ${letter}`;
+      }
+    } else {
+      progressBar.style.width = '0%';
+      progressLabel.textContent = !letter ? 'Show your hand to start' : 'Sign not recognised — try again';
+      if (letter !== lastLetter) { holdStart = null; lastLetter = ''; }
+      statusText.textContent = !letter ? 'No hand detected' : 'Unknown sign';
+    }
+  }
+
+  function updateTranscript() { transcriptEl.innerHTML = transcript.slice(-50) + '<span class="cursor"></span>'; }
+  function addSpace()   { transcript += ' '; updateTranscript(); }
+  function deleteLast() { transcript = transcript.slice(0,-1); updateTranscript(); }
+  function clearAll()   { transcript = ''; updateTranscript(); }
+  function copyText()   { navigator.clipboard.writeText(transcript).then(() => { statusText.textContent = 'Copied!'; setTimeout(()=>statusText.textContent='Ready',1500); }); }
+  function quitApp()    {
+    if (confirm('Quit the app and stop the server?')) {
+      fetch('/quit', { method:'POST' }).finally(() => {
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:1.5rem;color:#555;">Server stopped. You can close this tab.</div>';
+      });
+    }
+  }
+</script>
+</body>
+</html>

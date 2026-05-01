@@ -1,40 +1,46 @@
 # 🤟 ASL Sign Language Interpreter
 
-A real-time American Sign Language (ASL) interpreter built with Python, MediaPipe, and OpenCV. It detects your hand via webcam, identifies ASL letters from your finger positions, and builds a live transcript as you sign.
+A real-time American Sign Language (ASL) interpreter that runs in your browser. It uses your webcam to detect hand gestures and builds a live transcript as you sign — no installation needed beyond running the server.
+
+**Live Demo:** [Coming soon after deployment]
 
 ---
 
-## Demo
+## Preview
 
-> Hold a sign for ~1.5 seconds → the letter locks in → transcript builds up in real time.
-
-*Add a screenshot or GIF of the app running here*
+![App Screenshot](screenshot.png)
 
 ---
 
 ## Features
 
-- 🖐️ Real-time hand landmark detection (21 points) via MediaPipe
-- 🔤 Recognizes ASL letters: A, B, D, I, L, V, W, Y and more
-- 📊 Live finger state indicators (which fingers are up/down)
-- 📝 Live transcript with word-wrap display
-- ⏱️ Hold-to-confirm system prevents accidental letter spam
-- 🎨 Clean dark UI with side panel — no browser needed
+- Real-time hand landmark detection using MediaPipe
+- Recognizes ASL letters and numbers: A, B, D, I, L, V, W, Y, 1, 2, 3, 4, 5
+- Hold-to-confirm system: hold a sign for 1.5 seconds to add the letter
+- Live progress bar so you know when a letter will be added
+- Built-in sign reference guide always visible on screen
+- Space, Delete, Clear and Copy buttons to edit your transcript
+- Clean dark UI that runs entirely in the browser
 
 ---
 
 ## Supported Signs
 
-| Sign | Letter | Description |
-|------|--------|-------------|
-| ✊ Fist | A | All fingers closed |
-| 🖐️ Flat hand | B | All 4 fingers up, thumb tucked |
-| ☝️ Index only | D | Only index finger up |
-| 🤙 Thumb + pinky | Y | Thumb and pinky extended |
-| ✌️ Index + middle | V | Peace sign |
-| 🤘 Pinky only | I | Pinky only up |
-| 👆 Thumb + index | L | L shape |
-| 🖖 Three fingers | W | Index, middle, ring up |
+| Letter | How to sign it |
+|--------|----------------|
+| A | Fist, all fingers closed |
+| B | 4 fingers up, thumb tucked in |
+| D | Only index finger up |
+| I | Only pinky up |
+| L | Thumb and index up, L shape |
+| V | Index and middle up, peace sign |
+| W | Index, middle and ring up |
+| Y | Thumb and pinky out |
+| 1 | Index finger only |
+| 2 | Index and middle |
+| 3 | Index, middle and ring |
+| 4 | Four fingers, no thumb |
+| 5 | All five fingers open |
 
 ---
 
@@ -62,7 +68,7 @@ source .venv/bin/activate
 ### 3. Install dependencies
 
 ```bash
-pip install mediapipe==0.10.33 opencv-python numpy
+pip install -r requirements.txt
 ```
 
 ### 4. Run the app
@@ -71,18 +77,17 @@ pip install mediapipe==0.10.33 opencv-python numpy
 python app.py
 ```
 
-The hand landmarker model (`hand_landmarker.task`) will download automatically on first run (~8 MB).
+Open [http://localhost:5000](http://localhost:5000) in your browser. The hand landmarker model downloads automatically on first run (~8 MB).
 
 ---
 
-## Controls
+## How It Works
 
-| Key | Action |
-|-----|--------|
-| `Space` | Add a space to transcript |
-| `Backspace` | Delete last character |
-| `C` | Clear entire transcript |
-| `Q` | Quit and print final transcript |
+1. Your browser captures webcam frames and sends them to the Flask server
+2. MediaPipe detects 21 hand landmark points on each frame
+3. The server checks which fingers are up or down
+4. The finger combination maps to an ASL letter
+5. Hold a sign for 1.5 seconds and the letter is added to the transcript
 
 ---
 
@@ -90,35 +95,30 @@ The hand landmarker model (`hand_landmarker.task`) will download automatically o
 
 ```
 sign-language-interpreter/
-├── app.py                  # Main application
+├── app.py                  # Flask server and gesture recognition
+├── requirements.txt        # Python dependencies
+├── templates/
+│   └── index.html          # Browser UI
 ├── hand_landmarker.task    # MediaPipe model (auto-downloaded)
 └── README.md
 ```
 
 ---
 
-## How It Works
-
-1. **Webcam capture** — OpenCV grabs each frame from your camera
-2. **Hand detection** — MediaPipe finds 21 landmark points on your hand
-3. **Finger state** — each finger is checked: is the tip higher than the knuckle?
-4. **Gesture mapping** — the combination of up/down fingers maps to an ASL letter
-5. **Hold to confirm** — a progress bar fills over 1.5s, then the letter is added to the transcript
-
----
-
 ## Built With
 
 - [MediaPipe](https://mediapipe.dev) — hand landmark detection
-- [OpenCV](https://opencv.org) — webcam capture and UI rendering
-- [NumPy](https://numpy.org) — frame compositing
+- [OpenCV](https://opencv.org) — image processing
+- [Flask](https://flask.palletsprojects.com) — web server
+- [NumPy](https://numpy.org) — frame processing
 
 ---
 
 ## Author
 
+
 **Rahim Adnan**
-[Portfolio](https://rahim-adnan.github.io) · [GitHub](https://github.com/rahim-adnan)
+[Portfolio](https://rahim-adnan.github.io) . [GitHub](https://github.com/rahim-adnan)
 
 ---
 
