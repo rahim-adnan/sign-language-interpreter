@@ -1,8 +1,8 @@
 # 🤟 ASL Sign Language Interpreter
 
-A real-time American Sign Language (ASL) interpreter that runs in your browser. It uses your webcam to detect hand gestures and builds a live transcript as you sign — no installation needed beyond running the server.
+A real-time American Sign Language (ASL) interpreter that runs in your browser. It uses your webcam to detect hand gestures and builds a live transcript as you sign.
 
-**Live Demo:** [Coming soon after deployment]
+**Live Demo:** [sign-language-interpreter-1-bg66.onrender.com](https://sign-language-interpreter-1-bg66.onrender.com)
 
 ---
 
@@ -96,6 +96,7 @@ Open [http://localhost:5000](http://localhost:5000) in your browser. The hand la
 ```
 sign-language-interpreter/
 ├── app.py                  # Flask server and gesture recognition
+├── Dockerfile              # Container config for deployment
 ├── requirements.txt        # Python dependencies
 ├── templates/
 │   └── index.html          # Browser UI
@@ -115,7 +116,6 @@ sign-language-interpreter/
 ---
 
 ## Author
-
 
 **Rahim Adnan**
 [Portfolio](https://rahim-adnan.github.io) . [GitHub](https://github.com/rahim-adnan)
